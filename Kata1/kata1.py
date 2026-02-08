@@ -1,6 +1,7 @@
-import argparse
-import json
 from pathlib import Path
+import argparse
+import datetime
+import json
 import csv
 import sys
 
@@ -107,6 +108,18 @@ def filter_records(records, args):
 
     return filtered_records
 
+def log_operation(log_path: Path, read_count: int, written_count: int):
+    timestamp = timestamp = datetime.now().isoformat()
+
+    log_entry = (
+        f"{timestamp} | "
+        f"records_read={read_count} | "
+        f"records_written={written_count}\n"
+    )
+
+    with log_path.open("a", encoding="utf-8") as log_file:
+        log_file.write(log_entry)
+
 def main():
     args = parse_args()
 
@@ -126,6 +139,8 @@ def main():
     filtered_records = filter_records(records, args)
 
     write_csv(output_path, filtered_records, fieldnames)
+
+    log_operation(args.log_file, len(records), len(filtered_records))
 
 
 if __name__ == "__main__":
