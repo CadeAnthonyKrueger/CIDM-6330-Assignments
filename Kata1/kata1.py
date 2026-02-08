@@ -1,6 +1,6 @@
 from pathlib import Path
+from datetime import datetime
 import argparse
-import datetime
 import json
 import csv
 import sys
@@ -140,8 +140,15 @@ def main():
 
     write_csv(output_path, filtered_records, fieldnames)
 
-    log_operation(args.log_file, len(records), len(filtered_records))
+    records_read = len(records)
+    records_written = len(filtered_records)
 
+    log_operation(args.log_file, records_read, records_written)
+
+    print(
+        f"Done. Read {records_read} records, "
+        f"wrote {records_written} records."
+    )
 
 if __name__ == "__main__":
     main()
