@@ -1,4 +1,5 @@
 import argparse
+import json
 from pathlib import Path
 import csv
 import sys
@@ -43,49 +44,89 @@ def parse_args():
 
     return parser.parse_args()
 
+def read_records(input_path):
+    ext = input_path.suffix.lower()
+
+    if ext == ".csv":
+        return read_csv(input_path)
+
+    elif ext == ".json":
+        return read_json(input_path)
+
+    else:
+        raise ValueError(f"Unsupported file format: {ext}. Use .csv or .json.")
+
+def read_csv(input_path):
+    with input_path.open("r", newline="", encoding="utf-8") as infile:
+        reader = csv.DictReader(infile)
+        records = list(reader)
+        fieldnames = reader.fieldnames or []
+
+        if not fieldnames:
+            raise ValueError("CSV has no headers")
+
+    return records, fieldnames
+
+def read_json(input_path):
+    with input_path.open("r", encoding="utf-8") as infile:
+        records = json.load(infile)
+
+    if not isinstance(records, list):
+        raise ValueError("JSON must be a list of records")
+
+    fieldnames = list(records[0].keys()) if records else []
+    return records, fieldnames
+
+def write_csv(output_path, records, fieldnames):
+    with output_path.open("w", newline="", encoding="utf-8") as outfile:
+        writer = csv.DictWriter(outfile, fieldnames=fieldnames)
+        writer.writeheader()
+        writer.writerows(records)
+
+def filter_records(records, args):
+    filtered_records = []
+
+    for row in records:
+        if args.temp_threshold_max is not None:
+            try:
+                max_daily_temp = float(row.get("TMAX", ""))
+            except (TypeError, ValueError):
+                continue
+            if max_daily_temp < args.temp_threshold_max:
+                continue
+
+        if args.prcp_min is not None:
+            try:
+                prcp = float(row.get("PRCP", ""))
+            except (TypeError, ValueError):
+                continue
+            if prcp < args.prcp_min:
+                continue
+
+        filtered_records.append(row)
+
+    return filtered_records
+
 def main():
     args = parse_args()
 
-    input_path = Path(args.input_file)
-    output_path = Path(args.output_file)
+    input_path = args.input
+    output_path = args.output_csv
 
     if not input_path.exists():
         print(f"Error: input file does not exist: {input_path}", file=sys.stderr)
         sys.exit(1)
 
-    records_read = 0
-    records_written = 0
+    try:
+        records, fieldnames = read_records(input_path)
+    except (ValueError, json.JSONDecodeError) as e:
+        print(f"Error reading input file: {e}", file=sys.stderr)
+        sys.exit(1)
 
-    with input_path.open("r", newline="", encoding="utf-8") as infile, \
-         output_path.open("w", newline="", encoding="utf-8") as outfile:
+    filtered_records = filter_records(records, args)
 
-        reader = csv.DictReader(infile)
-        fieldnames = reader.fieldnames or []
+    write_csv(output_path, filtered_records, fieldnames)
 
-        if not fieldnames:
-            print("Error: input CSV has no header/fieldnames.", file=sys.stderr)
-            sys.exit(1)
-
-        writer = csv.DictWriter(outfile, fieldnames=fieldnames)
-        writer.writeheader()
-
-        for row in reader:
-            records_read += 1
-
-            try:
-                max_daily_temp = float(row.get("TMAX", ""))
-                prcp = float(row.get("PRCP", ""))
-            except (TypeError, ValueError):
-                continue
-
-            if args.temp_threshold_max is not None and max_daily_temp < args.temp_threshold_max:
-                continue
-
-            if args.prcp_min is not None and prcp < args.prcp_min:
-                continue
-
-            writer.writerow(row)
-            records_written += 1
 
 if __name__ == "__main__":
     main()
