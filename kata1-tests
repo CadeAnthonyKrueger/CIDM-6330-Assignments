@@ -1,0 +1,7 @@
+python kata1.py 4223839.csv output.csv --temp-threshold-max 40
+
+python kata1.py 4223839.json output.csv --temp-threshold-max 40
+
+python kata1.py 4223839.csv output.csv --prcp-min 0.01
+
+python kata1.py 4223839.json output.csv --temp-threshold-max 40 --prcp-min 0.01
