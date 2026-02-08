@@ -79,3 +79,63 @@ def seed_data(conn: sqlite3.Connection) -> None:
     )
 
     conn.commit()
+
+def insert_airport(conn: sqlite3.Connection, code: str, name: str) -> None:
+    """Insert a new airport record.
+
+    Args:
+        conn: An open sqlite3.Connection.
+        code: Airport code.
+        name: Airport name.
+    """
+    cursor = conn.cursor()
+    cursor.execute(
+        "INSERT INTO airports (code, name) VALUES (?, ?)",
+        (code, name)
+    )
+    conn.commit()
+
+
+def get_airports(conn: sqlite3.Connection):
+    """Retrieve all airports.
+
+    Args:
+        conn: An open sqlite3.Connection.
+
+    Returns:
+        List of airport rows.
+    """
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM airports")
+    return cursor.fetchall()
+
+
+def update_airport_name(conn: sqlite3.Connection, airport_id: int, new_name: str) -> None:
+    """Update the name of an airport.
+
+    Args:
+        conn: An open sqlite3.Connection.
+        airport_id: ID of the airport to update.
+        new_name: New airport name.
+    """
+    cursor = conn.cursor()
+    cursor.execute(
+        "UPDATE airports SET name = ? WHERE id = ?",
+        (new_name, airport_id)
+    )
+    conn.commit()
+
+
+def delete_airport(conn: sqlite3.Connection, airport_id: int) -> None:
+    """Delete an airport record.
+
+    Args:
+        conn: An open sqlite3.Connection.
+        airport_id: ID of the airport to delete.
+    """
+    cursor = conn.cursor()
+    cursor.execute(
+        "DELETE FROM airports WHERE id = ?",
+        (airport_id,)
+    )
+    conn.commit()
