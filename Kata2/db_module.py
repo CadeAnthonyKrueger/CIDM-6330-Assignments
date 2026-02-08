@@ -139,3 +139,20 @@ def delete_airport(conn: sqlite3.Connection, airport_id: int) -> None:
         (airport_id,)
     )
     conn.commit()
+
+def get_flights_with_airports(conn: sqlite3.Connection):
+    """Return flights joined with airport information.
+
+    Args:
+        conn: An open sqlite3.Connection.
+
+    Returns:
+        Joined flight and airport rows.
+    """
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT flights.flight_number, airports.code, airports.name
+        FROM flights
+        JOIN airports ON flights.origin_airport_id = airports.id
+    """)
+    return cursor.fetchall()
