@@ -23,7 +23,7 @@ def create_tables(conn: sqlite3.Connection) -> None:
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS airports (
             id INTEGER PRIMARY KEY,
-            code TEXT NOT NULL,
+            code TEXT NOT NULL UNIQUE,
             name TEXT NOT NULL
         );
     """)
@@ -41,12 +41,20 @@ def create_tables(conn: sqlite3.Connection) -> None:
 
 
 def seed_data(conn: sqlite3.Connection) -> None:
-    """Populate the database with sample data.
+    """Populate the database with sample data if empty.
 
     Args:
         conn: An open sqlite3.Connection.
     """
     cursor = conn.cursor()
+
+    # Check if airports already have data
+    cursor.execute("SELECT COUNT(*) FROM airports")
+    count = cursor.fetchone()[0]
+
+    if count > 0:
+        # Data already seeded, do nothing
+        return
 
     airports = [
         ("DFW", "Dallas/Fort Worth"),
@@ -80,8 +88,9 @@ def seed_data(conn: sqlite3.Connection) -> None:
 
     conn.commit()
 
+
 def insert_airport(conn: sqlite3.Connection, code: str, name: str) -> None:
-    """Insert a new airport record.
+    """Insert or update an airport record by code.
 
     Args:
         conn: An open sqlite3.Connection.
@@ -89,10 +98,14 @@ def insert_airport(conn: sqlite3.Connection, code: str, name: str) -> None:
         name: Airport name.
     """
     cursor = conn.cursor()
-    cursor.execute(
-        "INSERT INTO airports (code, name) VALUES (?, ?)",
-        (code, name)
-    )
+
+    cursor.execute("""
+        INSERT INTO airports (code, name)
+        VALUES (?, ?)
+        ON CONFLICT(code) DO UPDATE SET
+            name = excluded.name
+    """, (code, name))
+
     conn.commit()
 
 
@@ -155,4 +168,34 @@ def get_flights_with_airports(conn: sqlite3.Connection):
         FROM flights
         JOIN airports ON flights.origin_airport_id = airports.id
     """)
+    return cursor.fetchall()
+
+def create_index(conn: sqlite3.Connection) -> None:
+    """Create an index on flights.origin_airport_id to improve query performance.
+
+    Args:
+        conn: An open sqlite3.Connection.
+    """
+    cursor = conn.cursor()
+    cursor.execute("""
+        CREATE INDEX IF NOT EXISTS idx_origin_airport
+        ON flights(origin_airport_id)
+    """)
+    conn.commit()
+
+
+def explain_query_plan(conn: sqlite3.Connection):
+    """Return the query plan for selecting flights by airport.
+
+    Args:
+        conn: An open sqlite3.Connection.
+
+    Returns:
+        Query plan rows.
+    """
+    cursor = conn.cursor()
+    cursor.execute("""
+        EXPLAIN QUERY PLAN
+        SELECT * FROM flights WHERE origin_airport_id = ?
+    """, (1,))
     return cursor.fetchall()
