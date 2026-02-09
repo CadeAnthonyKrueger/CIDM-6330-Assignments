@@ -2,10 +2,10 @@ import sqlite3
 import db_module
 
 def print_dataset(conn: sqlite3.Connection, dataset: list[any], dataset_name: str):
-    print(f'-------------------------------- {dataset_name} --------------------------------')
+    print(f'{32*'-'} {dataset_name} {32*'-'}')
     for entry in dataset:
         print(entry)
-    print(f'---------------------------------{len(dataset_name)*'-'}---------------------------------\n\n\n\n')
+    print(f'{33*'-'}{len(dataset_name)*'-'}{33*'-'}\n\n\n\n')
 
 def main():
     conn = db_module.create_connection("air_travel.db")
