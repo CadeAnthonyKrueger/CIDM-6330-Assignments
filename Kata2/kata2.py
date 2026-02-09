@@ -8,8 +8,11 @@ def main():
     db_module.create_tables(conn)
     db_module.seed_data(conn)
 
-    conn.close()
+    airports = db_module.get_airports(conn)
+    for airport in airports:
+        print(airport)
 
+    conn.close()
 
 if __name__ == "__main__":
     main()
